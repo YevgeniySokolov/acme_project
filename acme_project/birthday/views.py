@@ -1,22 +1,40 @@
-# birthday/views.py 
-from django.shortcuts import render
+from django.views.generic import (
+    CreateView, ListView, UpdateView, DeleteView, DetailView
+)
+from django.urls import reverse_lazy
 
 from .forms import BirthdayForm
-# Импортируем из utils.py функцию для подсчёта дней.
+from .models import Birthday
 from .utils import calculate_birthday_countdown
 
 
-def birthday(request):
-    form = BirthdayForm(request.GET or None)
-    # Создаём словарь контекста сразу после инициализации формы.
-    context = {'form': form}
-    # Если форма валидна...
-    if form.is_valid():
-        # ...вызовем функцию подсчёта дней:
-        birthday_countdown = calculate_birthday_countdown(
-            # ...и передаём в неё дату из словаря cleaned_data.
-            form.cleaned_data['birthday']
+class BirthdayDeleteView(DeleteView):
+    model = Birthday
+    success_url = reverse_lazy('birthday:list')
+
+
+class BirthdayUpdateView(UpdateView):
+    model = Birthday
+    form_class = BirthdayForm
+
+
+class BirthdayCreateView(CreateView):
+    model = Birthday
+    form_class = BirthdayForm
+
+
+class BirthdayListView(ListView):
+    model = Birthday
+    ordering = 'id'
+    paginate_by = 10
+
+
+class BirthdayDetailView(DetailView):
+    model = Birthday
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['birthday_countdown'] = calculate_birthday_countdown(
+            self.object.birthday
         )
-        # Обновляем словарь контекста: добавляем в него новый элемент.
-        context.update({'birthday_countdown': birthday_countdown})
-    return render(request, 'birthday/birthday.html', context)
+        return context
